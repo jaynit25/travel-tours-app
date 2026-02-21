@@ -1,0 +1,18 @@
+src/
+ ├─ components/
+ │   ├─ Navbar.js
+ │   ├─ Sidebar.js
+ │   ├─ TourCard.js
+ │   ├─ StatsCard.js
+ │   └─ TourModal.js
+ ├─ pages/
+ │   ├─ Home.js
+ │   ├─ Tours.js
+ │   ├─ MyBookings.js
+ │   ├─ Login.js
+ │   ├─ AdminDashboard.js
+ │   ├─ ManageTours.js
+ │   ├─ ManageBookings.js
+ │   └─ ManageUsers.js
+ ├─ api.js
+ └─ App.js
