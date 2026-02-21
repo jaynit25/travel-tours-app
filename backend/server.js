@@ -17,7 +17,12 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.log(err));
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: false
+  })
+);
 app.use(express.json());
 
 // -------------------- MODELS --------------------
@@ -288,4 +293,8 @@ app.put("/api/profile", protect, async (req, res) => {
 
 // -------------------- START SERVER --------------------
 
-app.listen(5000, () => console.log("Backend running on http://localhost:5000"));
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () =>
+  console.log(`Backend running on port ${PORT}`)
+);
