@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const IMAGE_BASE = process.env.REACT_APP_Image_BASE_URL || "http://localhost:5000";
+ const IMAGE_BASE = process.env.REACT_APP_Image_BASE_URL || "http://localhost:5000";
   const [role, setRole] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -17,7 +17,7 @@ export default function Navbar() {
   const handleClose = () => setAnchorEl(null);
 
   const links = role === "admin" 
-    ? [{ label: "Dashboard", path: "/admin" }, { label: "Tours", path: "/admin/tours" }, { label: "Bookings", path: "/admin/bookings" }]
+    ? [{ label: "Customer View", path: "/" },{ label: "Dashboard", path: "/admin" }, { label: "Tours", path: "/admin/tours" }, { label: "Bookings", path: "/admin/bookings" },{label: "Users", path: "/admin/users"}]
     : [{ label: "Home", path: "/" }, { label: "My Bookings", path: "/mybookings" }, { label: "Profile", path: "/profile" }];
 
   return (
