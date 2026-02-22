@@ -17,13 +17,34 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.log(err));
 
 const app = express();
+// Update CORS to allow multiple origins (Local + Production)
+const allowedOrigins = [
+  process.env.FRONTEND_URL, 
+  "http://localhost:3000",
+  "https://jaynit25.github.io" // Add this if you use GitHub Pages for frontend
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: false
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        return callback(new Error("CORS policy blocked this origin"), false);
+      }
+      return callback(null, true);
+    },
+    credentials: true // Changed to true to support secure sessions/cookies if needed later
   })
 );
+
+// Health Check Route (Render uses this to monitor your app)
+app.get("/", (req, res) => {
+  res.send("Khodiyar Global Holidays API is running...");
+});
 app.use(express.json());
+
+
 
 // -------------------- MODELS --------------------
 
