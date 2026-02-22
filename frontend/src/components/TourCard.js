@@ -3,10 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 export default function TourCard({ tour }) {
   const navigate = useNavigate();
-  // Use the Image Base URL specifically for the media
   const IMAGE_BASE = process.env.REACT_APP_Image_BASE_URL || "http://localhost:5000";
 
-  // Fix backslashes from Windows DB and ensure leading slash
   const cleanImagePath = tour.image?.replace(/\\/g, '/');
   const fullImageUrl = tour.image 
     ? `${IMAGE_BASE}${cleanImagePath.startsWith('/') ? '' : '/'}${cleanImagePath}`
@@ -15,37 +13,44 @@ export default function TourCard({ tour }) {
   return (
     <Card
       sx={{
-        width: "100%",
+        height: "100%", // Fills the grid item height
         display: "flex",
         flexDirection: "column",
-        boxShadow: 2,
+        boxShadow: "0px 2px 8px rgba(0,0,0,0.1)",
         borderRadius: 2,
         overflow: "hidden",
-        transition: "transform 0.3s ease",
-        "&:hover": { transform: { xs: "none", md: "scale(1.03)" }, boxShadow: 6 }
+        "&:hover": { boxShadow: "0px 8px 20px rgba(0,0,0,0.15)" }
       }}
     >
       <CardMedia
         component="img"
-        sx={{ 
-          height: { xs: 160, md: 200 }, 
-          objectFit: "cover" 
-        }}
+        sx={{ height: 200, objectFit: "cover" }}
         image={fullImageUrl}
         alt={tour.title}
         onError={(e) => { e.target.src = `${IMAGE_BASE}/uploads/default.jpg`; }}
       />
-      <CardContent sx={{ flexGrow: 1, p: { xs: 1.5, md: 2 } }}>
+      <CardContent sx={{ flexGrow: 1, p: 2 }}>
         <Typography 
           variant="h6" 
-          sx={{ fontSize: { xs: "1rem", md: "1.25rem" }, fontWeight: "bold", mb: 0.5 }}
+          sx={{ 
+            fontWeight: "bold", 
+            color: "#333", 
+            fontSize: "1.1rem",
+            mb: 1,
+            lineHeight: 1.2,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden"
+          }}
         >
           {tour.title}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {tour.location}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          📍 {tour.location}
         </Typography>
-        <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+        
+        <Box sx={{ mt: 'auto', display: "flex", alignItems: "center", gap: 1 }}>
           <Typography variant="h6" color="error" sx={{ fontWeight: "700" }}>
             ₹{tour.discountPrice}
           </Typography>
@@ -58,13 +63,7 @@ export default function TourCard({ tour }) {
         variant="contained"
         fullWidth
         onClick={() => navigate(`/tour/${tour._id}`)}
-        sx={{ 
-          mt: "auto", 
-          borderRadius: 0, 
-          bgcolor: "#1a237e", 
-          py: 1.2,
-          "&:hover": { bgcolor: "#0d1440" } 
-        }}
+        sx={{ borderRadius: 0, bgcolor: "#1a237e", py: 1.5, "&:hover": { bgcolor: "#0d1440" } }}
       >
         View Details
       </Button>

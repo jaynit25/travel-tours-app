@@ -56,7 +56,7 @@ export default function Footer() {
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: { xs: "center", md: "flex-start" } }}>
                 <Email sx={{ mr: 1 }} fontSize="small" />
                 <Typography variant="body2">
-                  info@khodiyarglobalholidays.com
+                  khodiyarglobalholidays@gmail.com
                 </Typography>
               </Box>
             </Box>
