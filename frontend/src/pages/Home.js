@@ -1,28 +1,33 @@
 import React, { useEffect, useState } from "react";
-import { 
-  Box, 
-  Typography, 
-  Container, 
-  Button, 
-  useTheme, 
-  alpha 
-} from "@mui/material";
+import { Box, Typography, Container, Button, useTheme, alpha } from "@mui/material";
 import Slider from "react-slick";
 import API from "../api";
 import TourCard from "../components/TourCard";
 import Footer from "../components/Footer";
+import Maintenance from "../pages/Maintenance";
 
-// Carousel CSS
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 export default function Home() {
   const [tours, setTours] = useState([]);
+  const [serverDown, setServerDown] = useState(false);
   const theme = useTheme();
-  const API_BASE_URL = process.env.REACT_APP_BASE_URL || "http://localhost:5000";
+  const IMAGE_BASE = process.env.REACT_APP_Image_BASE_URL || "http://localhost:5000";
 
   useEffect(() => {
-    API.get("/tours").then((res) => setTours(res.data));
+    API.get("/tours")
+      .then((res) => {
+        setTours(res.data);
+        setServerDown(false); // Reset if it was down before
+      })
+      .catch((err) => {
+        console.error("Critical Data Load Failed:", err);
+        // Only trigger maintenance if we have NO data to show
+        if (tours.length === 0) {
+          setServerDown(true);
+        }
+      });
   }, []);
 
   const sliderSettings = {
@@ -33,10 +38,17 @@ export default function Home() {
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 3000,
-    pauseOnHover: true,
     responsive: [
       { breakpoint: 1024, settings: { slidesToShow: 2 } },
-      { breakpoint: 600, settings: { slidesToShow: 1, dots: false } },
+      { 
+        breakpoint: 600, 
+        settings: { 
+          slidesToShow: 1, 
+          arrows: false, 
+          centerMode: true, 
+          centerPadding: '20px' 
+        } 
+      },
     ],
   };
 
@@ -49,90 +61,45 @@ export default function Home() {
 
   return (
     <Box sx={{ bgcolor: "#f9f9f9", minHeight: "100vh" }}>
-      
-      {/* --- REFINED HERO SECTION --- */}
       <Box
         sx={{
-          height: { xs: "60vh", md: "80vh" },
+          height: { xs: "50vh", md: "80vh" },
           display: "flex",
           alignItems: "center",
           position: "relative",
-          backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.8), rgba(0,0,0,0.2)), url('${API_BASE_URL}/uploads/loginbg.jpg')`,
+          backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0.3)), url('${IMAGE_BASE}/uploads/loginbg.jpg')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           color: "white",
-          mb: 4,
         }}
       >
         <Container maxWidth="lg">
-          <Box sx={{ maxWidth: 600 }}>
-            <Typography 
-              variant="h2" 
-              fontWeight="600" 
-              sx={{ 
-                fontSize: { xs: "2.5rem", md: "4rem" },
-                lineHeight: 1.2,
-                mb: 2 
-              }}
-            >
-              Khodiyar Global Holidays Tours & Travels
+          <Box sx={{ maxWidth: 700 }}>
+            <Typography variant="h2" sx={{ fontSize: { xs: "2rem", md: "3.5rem" }, fontWeight: "bold", mb: 2 }}>
+              Khodiyar Global Holidays
             </Typography>
-            <Typography 
-              variant="h5" 
-              sx={{ mb: 4, fontWeight: 300, opacity: 0.9 }}
-            >
-              Explore the divine journeys with Us. 
-              Your adventure starts here.
+            <Typography variant="h5" sx={{ mb: 4, opacity: 0.9, fontSize: { xs: "1rem", md: "1.5rem" } }}>
+              Explore divine journeys and world-class adventures.
             </Typography>
-            <Button 
-              variant="contained" 
-              size="large"
-              sx={{ 
-                bgcolor: "#ff9800", 
-                color: "white",
-                px: 4, py: 1.5, 
-                borderRadius: "50px",
-                fontSize: "1.1rem",
-                "&:hover": { bgcolor: "#e68a00" }
-              }}
-            >
-              Book Your Trip
+            <Button variant="contained" size="large" sx={{ bgcolor: "#ff9800", borderRadius: "50px", px: 4 }}>
+              Book Now
             </Button>
           </Box>
         </Container>
       </Box>
 
-      {/* --- DYNAMIC CATEGORY SECTIONS --- */}
-      <Container maxWidth="lg" sx={{ pb: 10 }}>
+      <Container maxWidth="lg" sx={{ py: 6 }}>
         {categories.map((cat) => {
           const filteredTours = tours.filter((t) => t.category === cat.key);
           if (filteredTours.length === 0) return null;
-
           return (
-            <Box key={cat.key} sx={{ mt: 8 }}>
-              <Box 
-                sx={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "space-between",
-                  mb: 4,
-                  borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                  pb: 1
-                }}
-              >
-                <Typography 
-                  variant="h4" 
-                  fontWeight="700"
-                  sx={{ color: theme.palette.primary.main }}
-                >
-                  {cat.title}
-                </Typography>
-                <Button color="primary" sx={{ fontWeight: "bold" }}>View All</Button>
-              </Box>
-
+            <Box key={cat.key} sx={{ mb: 8 }}>
+              <Typography variant="h4" sx={{ mb: 4, fontWeight: "bold", color: "#1a237e", textAlign: { xs: 'center', md: 'left' } }}>
+                {cat.title}
+              </Typography>
               <Slider {...sliderSettings}>
                 {filteredTours.map((tour) => (
-                  <Box key={tour._id} sx={{ px: 1.5, pb: 4 }}>
+                  <Box key={tour._id} sx={{ px: 1, pb: 4 }}>
                     <TourCard tour={tour} />
                   </Box>
                 ))}
@@ -141,7 +108,6 @@ export default function Home() {
           );
         })}
       </Container>
-
       <Footer />
     </Box>
   );

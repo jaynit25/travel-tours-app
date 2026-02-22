@@ -274,21 +274,32 @@ app.get("/api/profile", protect, async (req, res) => {
 
 // UPDATE PROFILE
 app.put("/api/profile", protect, async (req, res) => {
-  const user = await User.findById(req.user.id);
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+    user.mobile = req.body.mobile || user.mobile;
 
-  user.name = req.body.name || user.name;
-  user.email = req.body.email || user.email;
+    if (req.body.password && req.body.password !== "") {
+      user.password = req.body.password; // hashed by pre-save hook
+    }
 
-  if (req.body.password && req.body.password !== "") {
-  user.password = req.body.password; // let pre-save hook hash it
-	}
-
-
-  await user.save();
-
-  res.json({ message: "Profile updated successfully" });
+    await user.save();
+    res.json({ message: "Profile updated successfully!" });
+  } catch (err) {
+    if (err.code === 11000) {
+      // Duplicate key error
+      if (err.keyPattern.email) {
+        return res.status(400).json({ message: "This email is already taken." });
+      }
+      if (err.keyPattern.mobile) {
+        return res.status(400).json({ message: "This mobile number is already taken." });
+      }
+    }
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // -------------------- START SERVER --------------------

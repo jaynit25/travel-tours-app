@@ -15,7 +15,8 @@ import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
-  const API_BASE_URL = process.env.REACT_APP_BASE_URL || "http://localhost:5000";
+  const IMAGE_BASE_URL = process.env.REACT_APP_Image_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_BASE_URL || "http://localhost:5000/api";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +25,7 @@ export default function Login() {
   const login = async () => {
     try {
       const res = await axios.post(
-        `${API_BASE_URL}/api/login`,
+        `${API_BASE_URL}/login`,
         { email, password }
       );
 
@@ -43,8 +44,7 @@ export default function Login() {
       sx={{
         height: "100vh",
         display: "flex",
-        backgroundImage:
-          "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e')",
+        backgroundImage:`url(${IMAGE_BASE_URL}/uploads/loginbg.jpg)`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         justifyContent: "center",
@@ -64,7 +64,7 @@ export default function Login() {
         <Box sx={{ textAlign: "center", mb: 3 }}>
 		  <Box 
 			component="img"
-			src={`${API_BASE_URL}/uploads/applogo.png`}
+			src={`${IMAGE_BASE_URL}/uploads/applogo.png`}
 			alt="Khodiyar Global Holidays"
 			sx={{ height: 150, mb: 1 }}
 		  />
