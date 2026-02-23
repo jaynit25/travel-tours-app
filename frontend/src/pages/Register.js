@@ -18,9 +18,8 @@ export default function Register() {
   const navigate = useNavigate();
 
   // 🔹 Separate base URLs properly
-  const IMAGE_BASE_URL = "http://localhost:5000";
-  const API_BASE_URL =
-    process.env.REACT_APP_BASE_URL || "http://localhost:5000/api";
+  const IMAGE_BASE_URL = process.env.REACT_APP_Image_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_BASE_URL || "http://localhost:5000/api";
 
   const [data, setData] = useState({
     name: "",
