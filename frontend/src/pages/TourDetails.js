@@ -43,7 +43,7 @@ export default function TourDetails() {
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Box
         component="img"
-        src={tour.image ? `${process.env.REACT_APP_Image_BASE_URL}${tour.image}` : "/default.jpg"}
+        src={tour.image ? `${process.env.REACT_APP_Image_BASE_URL}${tour.image}` : `${IMAGE_BASE}/uploads/default.jpg`}
         alt={tour.title}
         sx={{ width: "100%", height: 400, borderRadius: 2, objectFit: "cover" }}
       />

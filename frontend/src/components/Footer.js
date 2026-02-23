@@ -49,14 +49,14 @@ export default function Footer() {
               <Box sx={{ display: "flex", alignItems: "center", mb: 1, justifyContent: { xs: "center", md: "flex-start" } }}>
                 <Phone sx={{ mr: 1 }} fontSize="small" />
                 <Typography variant="body2">
-                  +91 9712369327
+                  +91 9825105889
                 </Typography>
               </Box>
 
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: { xs: "center", md: "flex-start" } }}>
                 <Email sx={{ mr: 1 }} fontSize="small" />
                 <Typography variant="body2">
-                  khodiyarglobalholidays@gmail.com
+                  booking@khodiyarglobalholidays.com
                 </Typography>
               </Box>
             </Box>
