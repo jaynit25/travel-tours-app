@@ -10,6 +10,7 @@ import ReviewSection from "../components/Reviews/ReviewSection";
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import GroupsIcon from '@mui/icons-material/Groups';
+import { Helmet } from "react-helmet";
 
 export default function TourDetails() {
   const { id } = useParams();
@@ -80,9 +81,30 @@ export default function TourDetails() {
   const fullImageUrl = tour.image 
     ? `${IMAGE_BASE}${cleanImagePath.startsWith('/') ? '' : '/'}${cleanImagePath}`
     : `${IMAGE_BASE}/uploads/default.jpg`;
-
+  const currentUrl = window.location.href;
   return (
     <Container maxWidth="lg" sx={{ mt: 5, mb: 10 }}>
+    {/* SEO META TAGS */}
+      {tour && (
+        <Helmet>
+          <title>{tour.title} | Khodiyar Global Holidays</title>
+          <meta name="description" content={tour.description?.substring(0, 160)} />
+          <meta name="keywords" content={`${tour.location}, ${tour.category}, travel deals, divine journeys`} />
+
+          {/* Facebook / WhatsApp / LinkedIn (Open Graph) */}
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={currentUrl} />
+          <meta property="og:title" content={`${tour.title} - ${tour.location}`} />
+          <meta property="og:description" content={`Book your ${tour.days}-day adventure to ${tour.location} for only ₹${tour.discountPrice}!`} />
+          <meta property="og:image" content={fullImageUrl} />
+
+          {/* Twitter */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={tour.title} />
+          <meta name="twitter:description" content={tour.description?.substring(0, 160)} />
+          <meta name="twitter:image" content={fullImageUrl} />
+        </Helmet>
+      )}
       <Grid container spacing={5}>
         {/* Left Side: Image Section */}
         <Grid item xs={12} md={7}>
