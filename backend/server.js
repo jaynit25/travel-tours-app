@@ -8,6 +8,8 @@ import dotenv from "dotenv";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
+import { SitemapStream, streamToPromise } from "sitemap";
+import { createGzip } from "zlib";
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -450,7 +452,43 @@ app.get("/api/admin/reviews", protect, adminOnly, async (req, res) => {
   const reviews = await Review.find().populate("user", "name").populate("tour", "title");
   res.json(reviews);
 });
+// -------------------- SEO & SITEMAP ROUTE --------------------
 
+app.get("/sitemap.xml", async (req, res) => {
+  res.header("Content-Type", "application/xml");
+  res.header("Content-Encoding", "gzip");
+
+  try {
+    const smStream = new SitemapStream({ 
+      hostname: "https://www.khodiyarglobalholidays.com" 
+    });
+    const pipeline = smStream.pipe(createGzip());
+
+    // 1. Static Pages
+    smStream.write({ url: "/", changefreq: "daily", priority: 1.0 });
+    smStream.write({ url: "/login", changefreq: "monthly", priority: 0.3 });
+    smStream.write({ url: "/register", changefreq: "monthly", priority: 0.3 });
+
+    // 2. Dynamic Tour Pages
+    // This pulls every tour you've added to MongoDB automatically
+    const tours = await Tour.find(); 
+    tours.forEach((tour) => {
+      smStream.write({
+        url: `/tour/${tour._id}`, 
+        changefreq: "weekly",
+        priority: 0.8,
+      });
+    });
+
+    smStream.end();
+
+    // Stream the result to the response
+    streamToPromise(pipeline).then((sm) => res.send(sm));
+  } catch (err) {
+    console.error(err);
+    res.status(500).end();
+  }
+});
 // -------------------- START SERVER --------------------
 
 const PORT = process.env.PORT || 5000;
