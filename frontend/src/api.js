@@ -4,41 +4,45 @@ const API = axios.create({
   baseURL: process.env.REACT_APP_BASE_URL || "http://localhost:5000/api"
 });
 
+// Interceptor to attach Token
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
+// Interceptor for Error Handling (Maintenance Redirection)
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 1. Check if it's a true Server Down/Network error (no response from server)
     const isNetworkError = !error.response;
-    // 2. Check if it's a 500 error on a CRITICAL path (you can add more here)
-    const isCriticalPath = error.config.url.includes("/tours");
-
-    if (isNetworkError || (error.response.status >= 500 && isCriticalPath)) {
+    const isCriticalPath = error.config?.url?.includes("/tours");
+    if (isNetworkError || (error.response?.status >= 500 && isCriticalPath)) {
       if (window.location.pathname !== "/maintenance") {
         window.location.href = "/maintenance";
       }
     }
-
-    // For non-critical errors (401, 404, or non-critical 500s), 
-    // just reject so the specific component can show a message
     return Promise.reject(error);
   }
 );
-// Get profile
-export const getProfile = async () => {
-  const res = await API.get("/profile");
-  return res.data;
-};
 
-// Update profile
-export const updateProfile = async (data) => {
-  const res = await API.put("/profile", data);
-  return res.data;
-};
+// -------------------- PROFILE APIs --------------------
+export const getProfile = () => API.get("/profile").then(res => res.data);
+export const updateProfile = (data) => API.put("/profile", data).then(res => res.data);
+
+// -------------------- REVIEW APIs --------------------
+
+// Public: Get approved reviews for a specific tour
+export const getTourReviews = (tourId) => API.get(`/reviews/${tourId}`).then(res => res.data);
+
+// Customer: Submit a new review
+export const submitReview = (reviewData) => API.post("/reviews", reviewData).then(res => res.data);
+
+// Admin: Get all reviews (including pending)
+export const getAllReviewsAdmin = () => API.get("/admin/reviews").then(res => res.data);
+
+// Admin: Approve/Hide a review
+export const updateReviewStatus = (reviewId, status) => 
+  API.put(`/admin/reviews/${reviewId}/approve`, { status }).then(res => res.data);
 
 export default API;

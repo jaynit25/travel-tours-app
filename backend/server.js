@@ -96,10 +96,26 @@ const bookingSchema = new mongoose.Schema({
   status: { type: String, default: "Pending" }
 });
 
-bookingSchema.index({ user: 1 });
-bookingSchema.index({ tour: 1 });
+bookingSchema.index({ user: 1, tour: 1 }, { unique: true });
 
 const Booking = mongoose.model("Booking", bookingSchema);
+
+// -------------------- REVIEW MODEL --------------------
+
+const reviewSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  tour: { type: mongoose.Schema.Types.ObjectId, ref: "Tour", required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: { type: String, required: true },
+  isApproved: { type: Boolean, default: false }, // New Field
+  createdAt: { type: Date, default: Date.now }
+});
+
+// Prevent a user from leaving multiple reviews for the same tour
+reviewSchema.index({ user: 1, tour: 1 }, { unique: true });
+
+const Review = mongoose.model("Review", reviewSchema);
+
 //--------------------- Upload Image ------------------
 // Storage configuration
 const __filename = fileURLToPath(import.meta.url);
@@ -240,15 +256,58 @@ app.put("/api/tours/:id", protect, adminOnly, upload.single("image"), async (req
   res.json(tour);
 });
 app.delete("/api/tours/:id", protect, adminOnly, async (req, res) => {
-  await Tour.findByIdAndDelete(req.params.id);
-  res.json({ message: "Tour deleted" });
+  try {
+    const tourId = req.params.id;
+
+    // 1. Delete all Bookings associated with this tour
+    await Booking.deleteMany({ tour: tourId });
+
+    // 2. Delete all Reviews associated with this tour
+    await Review.deleteMany({ tour: tourId });
+
+    // 3. Finally, delete the Tour itself
+    const deletedTour = await Tour.findByIdAndDelete(tourId);
+
+    if (!deletedTour) {
+      return res.status(404).json({ message: "Tour not found" });
+    }
+
+    res.json({ 
+      message: "Tour and all associated bookings/reviews have been removed successfully." 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 // -------------------- BOOKINGS ROUTES --------------------
 
 app.post("/api/book", protect, async (req, res) => {
-  const booking = await Booking.create({ user: req.user.id, tour: req.body.tourId });
-  res.json(booking);
+  try {
+    const { tourId } = req.body;
+
+    // 1. Check if the user has already booked THIS tour
+    const existingBooking = await Booking.findOne({ 
+      user: req.user.id, 
+      tour: tourId 
+    });
+
+    if (existingBooking) {
+      return res.status(400).json({ 
+        message: "You have already booked this tour package!" 
+      });
+    }
+
+    // 2. If no duplicate, create the booking
+    const booking = await Booking.create({ 
+      user: req.user.id, 
+      tour: tourId 
+    });
+
+    res.json(booking);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 app.get("/api/mybookings", protect, async (req, res) => {
@@ -321,6 +380,75 @@ app.put("/api/profile", protect, async (req, res) => {
     }
     res.status(500).json({ message: err.message });
   }
+});
+
+// --------------------- Review Section ---------------------
+
+// 1. Submit a Review
+app.post("/api/reviews", protect, async (req, res) => {
+  try {
+    const { tourId, rating, comment } = req.body;
+
+    // Optional: Check if user actually booked this tour before allowing a review
+    const hasBooked = await Booking.findOne({ user: req.user.id, tour: tourId, status: "Confirmed" });
+    // If you want to allow everyone to review, comment out the next 2 lines:
+    if (!hasBooked) return res.status(403).json({ message: "You can only review tours you have a confirmed booking for." });
+
+    const review = await Review.create({
+      user: req.user.id,
+      tour: tourId,
+      rating,
+      comment
+    });
+
+    res.status(201).json(review);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "You have already reviewed this tour." });
+    }
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get only APPROVED reviews for customers
+app.get("/api/reviews/:tourId", async (req, res) => {
+  try {
+    const reviews = await Review.find({ 
+      tour: req.params.tourId, 
+      isApproved: true // Only show approved ones
+    })
+    .populate("user", "name")
+    .sort({ createdAt: -1 });
+    
+    res.json(reviews);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Admin: Approve or Reject a review
+app.put("/api/admin/reviews/:id/approve", protect, adminOnly, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const review = await Review.findByIdAndUpdate(
+      req.params.id, 
+      { isApproved: status }, 
+      { new: true }
+    );
+
+    // Add this check
+    if (!review) return res.status(404).json({ message: "Review not found" });
+
+    res.json({ message: `Review ${status ? 'Approved' : 'Hidden'}`, review });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Admin: Get ALL reviews (including pending) for the dashboard
+app.get("/api/admin/reviews", protect, adminOnly, async (req, res) => {
+  const reviews = await Review.find().populate("user", "name").populate("tour", "title");
+  res.json(reviews);
 });
 
 // -------------------- START SERVER --------------------
