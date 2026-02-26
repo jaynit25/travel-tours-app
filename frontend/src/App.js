@@ -16,6 +16,7 @@ import ManageTours from "./pages/ManageTours";
 import ManageBookings from "./pages/ManageBookings";
 import ManageUsers from "./pages/ManageUsers";
 import ManageReviews from "./pages/ManageReviews";
+import ManageInquiry from "./pages/ManageInquiry";
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/admin/bookings" element={<ProtectedRoute roleRequired="admin"><AdminLayout><ManageBookings /></AdminLayout></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute roleRequired="admin"><AdminLayout><ManageUsers /></AdminLayout></ProtectedRoute>} />
         <Route path="/admin/reviews" element={<ProtectedRoute roleRequired="admin"><AdminLayout><ManageReviews /></AdminLayout></ProtectedRoute>} />
+        <Route path="/admin/inquiries" element={<ProtectedRoute roleRequired="admin"><AdminLayout><ManageInquiry /></AdminLayout></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

@@ -10,9 +10,17 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { SitemapStream, streamToPromise } from "sitemap";
 import { createGzip } from "zlib";
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import nodemailer from "nodemailer";
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
@@ -117,28 +125,51 @@ const reviewSchema = new mongoose.Schema({
 reviewSchema.index({ user: 1, tour: 1 }, { unique: true });
 
 const Review = mongoose.model("Review", reviewSchema);
+//-------------------- INQUIRY MODEL --------------------
+const inquirySchema = new mongoose.Schema({
+  fullName: String,
+  phoneNumber: String,
+  email: String,
+  travelDate: String,
+  message: String,
+  adults: Number,
+  children: Number,
+  infants: Number,
+  tourName: String,
+  status: { type: String, default: "New" },
+  createdAt: { type: Date, default: Date.now }
+});
 
+const Inquiry = mongoose.model("Inquiry", inquirySchema);
+//-------------------- END OF MODELS --------------------
 //--------------------- Upload Image ------------------
 // Storage configuration
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// Serve uploads folder statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/"); // folder where images are saved
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+
+// 3. Update Storage to use Cloudinary instead of Disk
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'khodiyar_tours', // The folder name in your Cloudinary dashboard
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
   },
 });
 
 const upload = multer({ storage });
 
-// Serve uploads folder statically
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-
+const transporter = nodemailer.createTransport({
+  host: "smtp.titan.email",
+  port: 465,
+  secure: true, // true for 465, false for 587
+  auth: {
+    user: process.env.EmailID, // Your full Titan email address
+    pass: process.env.EmailPassword, // Your Titan password
+  },
+});
 // -------------------- MIDDLEWARE --------------------
 
 const protect = async (req, res, next) => {
@@ -237,11 +268,9 @@ app.get("/api/tours", async (req, res) => {
 
 app.post("/api/tours", protect, adminOnly, upload.single("image"), async (req, res) => {
   const tourData = req.body;
-
   if (req.file) {
-    tourData.image = `/uploads/${req.file.filename}`; // save path to DB
+    tourData.image = req.file.path; // This will now be a https://res.cloudinary... URL
   }
-
   const tour = await Tour.create(tourData);
   res.json(tour);
 });
@@ -249,14 +278,13 @@ app.post("/api/tours", protect, adminOnly, upload.single("image"), async (req, r
 
 app.put("/api/tours/:id", protect, adminOnly, upload.single("image"), async (req, res) => {
   const tourData = req.body;
-
   if (req.file) {
-    tourData.image = `/uploads/${req.file.filename}`;
+    tourData.image = req.file.path; // Updates to the new Cloudinary URL
   }
-
   const tour = await Tour.findByIdAndUpdate(req.params.id, tourData, { new: true });
   res.json(tour);
 });
+
 app.delete("/api/tours/:id", protect, adminOnly, async (req, res) => {
   try {
     const tourId = req.params.id;
@@ -489,6 +517,62 @@ app.get("/sitemap.xml", async (req, res) => {
     res.status(500).end();
   }
 });
+// -------------------- END OF ROUTES --------------------
+// -------------------- Customer Inquiry Route --------------------
+
+app.post("/api/inquiry", async (req, res) => {
+  try {
+    // STEP 1: Always save to MongoDB first
+    const newInquiry = new Inquiry(req.body);
+    await newInquiry.save();
+
+    // STEP 2: Attempt to send email in a separate try/catch
+    // This prevents the whole request from failing if Titan rejects the login
+    try {
+      const adminMailOptions = {
+        from: `"Khodiyar Leads" <${process.env.EmailID}>`,
+        to: process.env.EmailID,
+        subject: `New Lead: ${req.body.fullName}`,
+        html: `<p>You have a new inquiry for ${req.body.tourName || 'General'}</p>`
+      };
+      
+      await transporter.sendMail(adminMailOptions);
+      console.log("✅ Email sent successfully");
+    } catch (mailErr) {
+      // Log the error in terminal, but DON'T stop the process
+      console.error("❌ Email failed, but data was saved to DB:", mailErr.message);
+    }
+
+    // STEP 3: Respond SUCCESS to React (because DB save worked)
+    res.status(201).json({ success: true, message: "Inquiry received!" });
+
+  } catch (err) {
+    console.error("❌ Critical Database Error:", err);
+    res.status(500).json({ message: "Server error processing inquiry." });
+  }
+});
+// GET route for Admin to view inquiries
+app.get("/api/admin/inquiries", async (req, res) => {
+  try {
+    const inquiries = await Inquiry.find().sort({ createdAt: -1 });
+    res.json(inquiries);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching inquiries" });
+  }
+});
+
+app.delete("/api/admin/inquiry/:id", async (req, res) => {
+  try {
+    await Inquiry.findByIdAndDelete(req.params.id);
+    res.json({ message: "Inquiry deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Delete failed" });
+  }
+});
+
+//--------------------- END OF INQUIRY ROUTE --------------------
+
+
 // -------------------- START SERVER --------------------
 
 const PORT = process.env.PORT || 5000;

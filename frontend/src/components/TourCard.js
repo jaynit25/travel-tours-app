@@ -8,10 +8,9 @@ export default function TourCard({ tour }) {
   const navigate = useNavigate();
   const IMAGE_BASE = process.env.REACT_APP_Image_BASE_URL || "http://localhost:5000";
 
-  const cleanImagePath = tour.image?.replace(/\\/g, '/');
-  const fullImageUrl = tour.image 
-    ? `${IMAGE_BASE}${cleanImagePath.startsWith('/') ? '' : '/'}${cleanImagePath}`
-    : `${IMAGE_BASE}/uploads/default.jpg`;
+  const fullImageUrl = tour.image?.startsWith('http') 
+    ? tour.image 
+    : `${IMAGE_BASE}${tour.image}`;
 
   return (
     <Card
@@ -19,77 +18,91 @@ export default function TourCard({ tour }) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        borderRadius: 4,
+        borderRadius: 3, // Slightly smoother corners
         overflow: "hidden",
         position: 'relative',
-        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-        border: '1px solid #f0f0f0',
-        boxShadow: "0px 4px 15px rgba(0,0,0,0.05)",
+        transition: 'all 0.3s ease-in-out',
+        border: '1px solid #eee',
+        boxShadow: "0px 2px 8px rgba(0,0,0,0.04)",
         "&:hover": { 
-          boxShadow: "0px 15px 35px rgba(0,0,0,0.12)",
-          transform: "translateY(-10px)",
-          "& .tour-image": { transform: "scale(1.1)" }
+          boxShadow: "0px 12px 24px rgba(0,0,0,0.1)",
+          transform: "translateY(-5px)",
+          "& .tour-image": { transform: "scale(1.08)" }
         }
       }}
     >
-      {/* Category Badge */}
+      {/* Category Badge - More Professional Padding */}
       <Chip 
-        label={tour.category} 
+        label={tour.category?.replace('_', ' ')} 
         size="small"
         sx={{ 
-          position: 'absolute', top: 10, left: 15, zIndex: 1,
-          bgcolor: 'rgba(255,255,255,0.9)', fontWeight: 'bold', color: '#1a237e'
+          position: 'absolute', top: 12, left: 12, zIndex: 1,
+          bgcolor: 'rgba(26, 35, 126, 0.85)', // Dark blue with transparency
+          color: '#fff', fontWeight: '600', textTransform: 'uppercase', fontSize: '0.65rem'
         }} 
       />
 
-      <Box sx={{ height: 200, overflow: 'hidden' }}>
-        <CardMedia
-          component="img"
-          className="tour-image"
-          sx={{ height: '100%', objectFit: "cover", transition: '0.6s' }}
-          image={fullImageUrl}
-          alt={tour.title}
-          onError={(e) => { e.target.src = `${IMAGE_BASE}/uploads/default.jpg`; }}
-        />
+      {/* Reduced Image Height (160px instead of 200px) */}
+      <Box sx={{ height: 160, overflow: 'hidden', bgcolor: '#f0f0f0' }}>
+        {tour.image && (
+          <CardMedia
+            component="img"
+            className="tour-image"
+            sx={{ height: '100%', width: '100%', objectFit: "cover", transition: '0.6s' }}
+            image={fullImageUrl}
+            alt={tour.title}
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+        )}
       </Box>
 
-      <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, color: '#ed8936' }}>
-          <LocationOnIcon sx={{ fontSize: 16 }} />
-          <Typography variant="caption" fontWeight="bold" sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
+      <CardContent sx={{ flexGrow: 1, p: 2 }}>
+        {/* Location with specific orange color */}
+        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 1, color: '#ed8936' }}>
+          <LocationOnIcon sx={{ fontSize: 14 }} />
+          <Typography variant="caption" fontWeight="700" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
             {tour.location}
           </Typography>
         </Stack>
 
+        {/* Title with better line height and wrapping */}
         <Typography 
-          variant="h6" 
+          variant="subtitle1" 
           sx={{ 
-            fontWeight: "800", color: "#2d3748", mb: 2, minHeight: '3em',
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
+            fontWeight: "800", color: "#2d3748", mb: 1.5, lineHeight: 1.3,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+            height: '2.6em' // Fixed height for alignment across cards
           }}
         >
           {tour.title}
         </Typography>
         
-        <Stack direction="row" justifyContent="space-between" sx={{ mb: 2, color: 'text.secondary' }}>
+        {/* Compact Meta Info Row */}
+        <Stack direction="row" spacing={2} sx={{ mb: 2, color: 'text.secondary' }}>
            <Stack direction="row" spacing={0.5} alignItems="center">
-              <CalendarTodayIcon sx={{ fontSize: 14 }} />
-              <Typography variant="caption">{tour.days} Days</Typography>
+              <CalendarTodayIcon sx={{ fontSize: 13 }} />
+              <Typography variant="caption" fontWeight="500">{tour.days} Days</Typography>
            </Stack>
            <Stack direction="row" spacing={0.5} alignItems="center">
-              <GroupsIcon sx={{ fontSize: 16 }} />
-              <Typography variant="caption">{tour.person} Person</Typography>
+              <GroupsIcon sx={{ fontSize: 15 }} />
+              <Typography variant="caption" fontWeight="500">{tour.person} Person</Typography>
            </Stack>
         </Stack>
 
-        <Divider sx={{ mb: 2, borderStyle: 'dashed' }} />
+        <Divider sx={{ mb: 2, borderStyle: 'dotted' }} />
 
-        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: "900", color: "#e53e3e" }}>
-            ₹{tour.discountPrice}
-          </Typography>
-          <Typography variant="body2" sx={{ textDecoration: "line-through", color: "text.disabled" }}>
-            ₹{tour.actualPrice}
+        {/* Improved Price Alignment */}
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: "900", color: "#e53e3e" }}>
+              ₹{tour.discountPrice}
+            </Typography>
+            <Typography variant="caption" sx={{ textDecoration: "line-through", color: "text.disabled", fontWeight: 500 }}>
+              ₹{tour.actualPrice}
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ bgcolor: '#fff5f5', color: '#e53e3e', px: 1, borderRadius: 1, fontWeight: 'bold' }}>
+            SAVE ₹{tour.actualPrice - tour.discountPrice}
           </Typography>
         </Box>
       </CardContent>
@@ -97,9 +110,14 @@ export default function TourCard({ tour }) {
       <Button
         variant="contained"
         fullWidth
-        onClick={() => navigate(`/tours/${tour._id}`)} // Fixed route path
+        onClick={() => navigate(`/tours/${tour._id}`)}
         sx={{ 
-          borderRadius: 0, bgcolor: "#1a237e", py: 2, fontWeight: 'bold',
+          borderRadius: 0, 
+          bgcolor: "#1a237e", 
+          py: 1.5, 
+          textTransform: 'none',
+          fontWeight: 'bold',
+          fontSize: '0.9rem',
           "&:hover": { bgcolor: "#ed8936" } 
         }}
       >

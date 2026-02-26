@@ -77,10 +77,10 @@ export default function TourDetails() {
     </Container>
   );
 
-  const cleanImagePath = tour.image?.replace(/\\/g, '/');
-  const fullImageUrl = tour.image 
-    ? `${IMAGE_BASE}${cleanImagePath.startsWith('/') ? '' : '/'}${cleanImagePath}`
-    : `${IMAGE_BASE}/uploads/default.jpg`;
+const fullImageUrl = tour.image?.startsWith('http') 
+  ? tour.image 
+  : `${IMAGE_BASE}${tour.image}`;
+
   const currentUrl = window.location.href;
   return (
     <Container maxWidth="lg" sx={{ mt: 5, mb: 10 }}>
@@ -108,18 +108,26 @@ export default function TourDetails() {
       <Grid container spacing={5}>
         {/* Left Side: Image Section */}
         <Grid item xs={12} md={7}>
-          <Box
-            component="img"
-            src={fullImageUrl}
-            alt={tour.title}
-            sx={{ 
-              width: "100%", 
-              height: { xs: 300, md: 500 }, 
-              borderRadius: 6, 
-              objectFit: "cover", 
-              boxShadow: '0 15px 35px rgba(0,0,0,0.1)' 
-            }}
-          />
+          {tour.image ? (
+            <Box
+              component="img"
+              src={fullImageUrl}
+              alt={tour.title}
+              sx={{ 
+                width: "100%", height: { xs: 300, md: 500 }, 
+                borderRadius: 6, objectFit: "cover", 
+                boxShadow: '0 15px 35px rgba(0,0,0,0.1)' 
+              }}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          ) : (
+            <Box sx={{ 
+              width: "100%", height: { xs: 300, md: 500 }, borderRadius: 6, 
+              bgcolor: '#f7fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' 
+            }}>
+              <Typography color="text.disabled">No Image Available</Typography>
+            </Box>
+          )}
         </Grid>
 
         {/* Right Side: Booking Card */}

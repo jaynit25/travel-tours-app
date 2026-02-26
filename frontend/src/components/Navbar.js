@@ -33,7 +33,8 @@ export default function Navbar() {
         { label: "Tours", path: "/admin/tours" }, 
         { label: "Bookings", path: "/admin/bookings" },
         { label: "Users", path: "/admin/users" },
-        { label: "Reviews", path: "/admin/reviews" }
+        { label: "Reviews", path: "/admin/reviews" },
+        { label: "Inquiries", path: "/admin/inquiries" }
       ]
     : [
         { label: "Home", path: "/" }, 

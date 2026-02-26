@@ -4,6 +4,7 @@ import API from "../api";
 import TourCard from "../components/TourCard";
 import Footer from "../components/Footer";
 import Maintenance from "../pages/Maintenance";
+import InquiryCard from "../components/InquiryCard";
 
 export default function Home() {
   const [tours, setTours] = useState([]);
@@ -99,6 +100,7 @@ export default function Home() {
           })
         )}
       </Container>
+      <InquiryCard />
       <Footer />
     </Box>
   );

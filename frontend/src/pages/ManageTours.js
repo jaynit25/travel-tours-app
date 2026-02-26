@@ -112,9 +112,12 @@ export default function ManageTours() {
                 <TableCell>
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Avatar 
-                      src={t.image ? `${process.env.REACT_APP_Image_BASE_URL}${t.image}` : ""} 
-                      variant="rounded" sx={{ width: 50, height: 50 }}
-                    />
+                        src={t.image ? (t.image.startsWith('http') ? t.image : `${process.env.REACT_APP_Image_BASE_URL}${t.image}`) : ""} 
+                        variant="rounded" 
+                        sx={{ width: 50, height: 50, bgcolor: '#f0f0f0' }}
+                      >
+                        {!t.image && t.title.charAt(0)} {/* Shows first letter if no image */}
+                      </Avatar>
                     <Typography variant="subtitle2" fontWeight="bold">{t.title}</Typography>
                   </Stack>
                 </TableCell>
