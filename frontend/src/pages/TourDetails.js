@@ -19,6 +19,7 @@ export default function TourDetails() {
   const [tour, setTour] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAlreadyBooked, setIsAlreadyBooked] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   const IMAGE_BASE = process.env.REACT_APP_Image_BASE_URL || "http://localhost:5000";
 
@@ -54,13 +55,15 @@ export default function TourDetails() {
       navigate("/login", { state: { from: location } });
       return;
     }
-
+    setBookingLoading(true);
     try {
       await API.post("/book", { tourId: id });
       alert("Booking Successful!");
       navigate("/mybookings");
     } catch (err) {
       alert(err.response?.data?.message || "Booking failed. Please try again.");
+    } finally {
+    setBookingLoading(false); // End loading
     }
   };
 
@@ -202,7 +205,7 @@ const fullImageUrl = tour.image?.startsWith('http')
                 '&:hover': { bgcolor: isAlreadyBooked ? '#ccc' : '#ed8936' }
               }}
             >
-              {isAlreadyBooked ? "Already Booked" : "Book My Adventure"}
+              {bookingLoading ? <CircularProgress size={24} color="inherit" /> : (isAlreadyBooked ? "Already Booked" : "Confirm Booking")}
             </Button>
           </Paper>
         </Grid>

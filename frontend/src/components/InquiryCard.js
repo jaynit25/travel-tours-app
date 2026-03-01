@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { 
   Fab, Dialog, DialogTitle, DialogContent, TextField, 
-  Button, Stack, Box, IconButton, Typography, Grid 
+  Button, Box, IconButton, Typography, Grid, CircularProgress 
 } from "@mui/material";
 import MessageIcon from '@mui/icons-material/Message';
 import CloseIcon from '@mui/icons-material/Close';
@@ -9,6 +9,7 @@ import API from "../api";
 
 const InquiryCard = ({ tourName }) => {
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false); // New Loading State
   const [formData, setFormData] = useState({
     fullName: "", phoneNumber: "", email: "", 
     travelDate: "", message: "", adults: 1, children: 0, infants: 0
@@ -20,8 +21,9 @@ const InquiryCard = ({ tourName }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // Disable button immediately
+    
     try {
-      // Ensure pax counts are numbers before sending
       const submissionData = {
         ...formData,
         adults: parseInt(formData.adults) || 0,
@@ -40,6 +42,8 @@ const InquiryCard = ({ tourName }) => {
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Error submitting inquiry.");
+    } finally {
+      setLoading(false); // Re-enable button
     }
   };
 
@@ -60,7 +64,7 @@ const InquiryCard = ({ tourName }) => {
 
       <Dialog 
         open={open} 
-        onClose={() => setOpen(false)} 
+        onClose={() => !loading && setOpen(false)} // Prevent closing while loading
         maxWidth="sm" 
         fullWidth
         PaperProps={{ sx: { borderRadius: 4 } }}
@@ -69,6 +73,7 @@ const InquiryCard = ({ tourName }) => {
           Get a Free Quote
           <IconButton
             onClick={() => setOpen(false)}
+            disabled={loading} // Disable close button while loading
             sx={{ position: 'absolute', right: 16, top: 16 }}
           >
             <CloseIcon />
@@ -83,37 +88,59 @@ const InquiryCard = ({ tourName }) => {
           <Box component="form" onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Full Name" name="fullName" required onChange={handleChange} value={formData.fullName} />
+                <TextField fullWidth label="Full Name" name="fullName" required onChange={handleChange} value={formData.fullName} disabled={loading} />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Phone Number" name="phoneNumber" required onChange={handleChange} value={formData.phoneNumber} />
+                <TextField fullWidth label="Phone Number" name="phoneNumber" required onChange={handleChange} value={formData.phoneNumber} disabled={loading} />
               </Grid>
               <Grid item xs={12}>
-                <TextField fullWidth label="Email Address" type="email" name="email" required onChange={handleChange} value={formData.email} />
+                <TextField fullWidth label="Email Address" type="email" name="email" required onChange={handleChange} value={formData.email} disabled={loading} />
               </Grid>
               <Grid item xs={12}>
                 <TextField 
                   fullWidth label="Travel Date" name="travelDate" type="date" 
-                  InputLabelProps={{ shrink: true }} onChange={handleChange} value={formData.travelDate}
+                  InputLabelProps={{ shrink: true }} onChange={handleChange} value={formData.travelDate} disabled={loading}
                 />
               </Grid>
               <Grid item xs={12}>
-                <TextField fullWidth label="Message" name="message" multiline rows={2} onChange={handleChange} value={formData.message} />
+                <TextField fullWidth label="Tour & Travel Details" name="message" multiline rows={2} onChange={handleChange} value={formData.message} disabled={loading} />
               </Grid>
               <Grid item xs={4}>
-                <TextField fullWidth label="Adults" type="number" name="adults" value={formData.adults} onChange={handleChange} />
+                <TextField fullWidth label="Adults" type="number" name="adults" value={formData.adults} onChange={handleChange} disabled={loading} />
               </Grid>
               <Grid item xs={4}>
-                <TextField fullWidth label="Children" type="number" name="children" value={formData.children} onChange={handleChange} />
+                <TextField fullWidth label="Children" type="number" name="children" value={formData.children} onChange={handleChange} disabled={loading} />
               </Grid>
               <Grid item xs={4}>
-                <TextField fullWidth label="Infants" type="number" name="infants" value={formData.infants} onChange={handleChange} />
+                <TextField fullWidth label="Infants" type="number" name="infants" value={formData.infants} onChange={handleChange} disabled={loading} />
               </Grid>
             </Grid>
 
             <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-              <Button fullWidth variant="outlined" onClick={() => setOpen(false)} sx={{ borderRadius: 2 }}>Cancel</Button>
-              <Button fullWidth variant="contained" type="submit" sx={{ bgcolor: '#ed8936', borderRadius: 2, fontWeight: 'bold', color: 'white' }}>Submit Request</Button>
+              <Button 
+                fullWidth 
+                variant="outlined" 
+                onClick={() => setOpen(false)} 
+                sx={{ borderRadius: 2 }} 
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                fullWidth 
+                variant="contained" 
+                type="submit" 
+                disabled={loading} // THE FIX
+                sx={{ 
+                  bgcolor: '#ed8936', 
+                  borderRadius: 2, 
+                  fontWeight: 'bold', 
+                  color: 'white',
+                  '&:disabled': { bgcolor: '#fbd38d', color: '#fff' } 
+                }}
+              >
+                {loading ? <CircularProgress size={24} color="inherit" /> : "Submit Request"}
+              </Button>
             </Box>
           </Box>
         </DialogContent>

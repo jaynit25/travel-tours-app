@@ -162,13 +162,14 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.titan.email",
-  port: 465,
-  secure: true, // true for 465, false for 587
+  service: "gmail",
   auth: {
-    user: process.env.EmailID, // Your full Titan email address
-    pass: process.env.EmailPassword, // Your Titan password
+    user: process.env.GmailEmailID,
+    pass: process.env.GmailEmailPassword,
   },
+  // Added for debugging:
+  logger: true, 
+  debug: true 
 });
 // -------------------- MIDDLEWARE --------------------
 
@@ -312,6 +313,10 @@ app.delete("/api/tours/:id", protect, adminOnly, async (req, res) => {
 
 // -------------------- BOOKINGS ROUTES --------------------
 
+// -------------------- UPDATED BOOKINGS ROUTE --------------------
+
+// -------------------- FIXED BOOKINGS ROUTE --------------------
+
 app.post("/api/book", protect, async (req, res) => {
   try {
     const { tourId } = req.body;
@@ -328,15 +333,78 @@ app.post("/api/book", protect, async (req, res) => {
       });
     }
 
-    // 2. If no duplicate, create the booking
+    // 2. Create the booking in DB
     const booking = await Booking.create({ 
       user: req.user.id, 
       tour: tourId 
     });
 
-    res.json(booking);
+    // 3. Fetch Full Details (Required for the Email)
+    // We use .populate to get names/titles instead of just IDs
+    const userDetails = await User.findById(req.user.id);
+    const tourDetails = await Tour.findById(tourId);
+
+    // 4. Prepare Email
+   // 4. Send Email Notification to Admin
+    const mailOptions = {
+      from: `"Khodiyar Booking System" <${process.env.GmailEmailID}>`,
+      to: process.env.EmailID,
+      subject: `New Booking Request: ${tourDetails?.title || 'New Tour'}`, // Simple subject
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee;">
+          <h2 style="color: #1a237e;">New Booking Received</h2>
+          <p>A customer has booked a tour package via the website.</p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <tr style="background-color: #f8f9fa;">
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Tour Name</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${tourDetails?.title}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Destination</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${tourDetails?.location}</td>
+            </tr>
+            <tr style="background-color: #f8f9fa;">
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Duration</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${tourDetails?.days} Days</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Customer Name</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${userDetails?.name}</td>
+            </tr>
+            <tr style="background-color: #f8f9fa;">
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Email</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${userDetails?.email}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border: 1px solid #ddd;"><strong>Mobile</strong></td>
+              <td style="padding: 10px; border: 1px solid #ddd;">${userDetails?.mobile}</td>
+            </tr>
+          </table>
+
+          <p style="margin-top: 30px; font-size: 14px; color: #666;">
+            <strong>Action Required:</strong> Please log in to your admin dashboard to update the booking status to "Confirmed" once payment is verified.
+          </p>
+        </div>
+      `
+    };
+
+    // 5. Send Email
+    // We use await here to ensure it tries to send before sending the success response
+    // But we wrap it in a try/catch so a mail error doesn't break the whole app
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log("✅ Booking Email sent successfully to admin");
+    } catch (mailErr) {
+      console.error("❌ Mail Transport Error:", mailErr);
+      // We don't return an error to the user because the booking IS saved in the DB
+    }
+
+    res.json({ success: true, message: "Booking confirmed! We will contact you soon." });
+    
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("❌ Booking Route Error:", err);
+    res.status(500).json({ message: "Internal Server Error during booking." });
   }
 });
 
@@ -368,10 +436,12 @@ app.get("/api/admin/users", protect, adminOnly, async (req, res) => {
 
 // Delete user
 app.delete("/api/admin/users/:id", protect, adminOnly, async (req, res) => {
-  await User.findByIdAndDelete(req.params.id);
-  res.json({ message: "User deleted" });
+  const userId = req.params.id;
+  await Booking.deleteMany({ user: userId });
+  await Review.deleteMany({ user: userId });
+  await User.findByIdAndDelete(userId);
+  res.json({ message: "User and all related data deleted" });
 });
-
 // ---------------------- Users Profile ---------------------
 // Get Profile
 app.get("/api/profile", protect, async (req, res) => {
@@ -521,38 +591,68 @@ app.get("/sitemap.xml", async (req, res) => {
 // -------------------- Customer Inquiry Route --------------------
 
 app.post("/api/inquiry", async (req, res) => {
-  try {
     // STEP 1: Always save to MongoDB first
     const newInquiry = new Inquiry(req.body);
     await newInquiry.save();
-
+    const mailOptions = {
+    from: `"Khodiyar Customer Inquiry" <${process.env.GmailEmailID}>`,
+    to: process.env.EmailID,
+    subject: `✈️ Customer Name: ${req.body.fullName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; border: 1px solid #ddd; padding: 20px;">
+        <h2 style="background-color: #004a99; color: white; padding: 10px; margin: -20px -20px 20px -20px; text-align: center;">
+          New Tour Inquiry
+        </h2>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Customer Name:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${req.body.fullName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Email:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${req.body.email}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Mobile:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${req.body.phoneNumber || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Travel Date:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${req.body.travelDate || 'Not specified'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Group Size:</strong></td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${req.body.adults} Adults, ${req.body.children} Children</td>
+          </tr>
+        </table>
+        
+        <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #004a99;">
+          <strong>Customer Message:</strong><br/>
+          ${req.body.message || "No message provided."}
+        </div>
+        
+        <p style="font-size: 12px; color: #888; margin-top: 30px; text-align: center;">
+          This inquiry was generated from Khodiyar Global Holidays Website.
+        </p>
+      </div>
+    `,
+  };
     // STEP 2: Attempt to send email in a separate try/catch
     // This prevents the whole request from failing if Titan rejects the login
     try {
-      const adminMailOptions = {
-        from: `"Khodiyar Leads" <${process.env.EmailID}>`,
-        to: process.env.EmailID,
-        subject: `New Lead: ${req.body.fullName}`,
-        html: `<p>You have a new inquiry for ${req.body.tourName || 'General'}</p>`
-      };
-      
-      await transporter.sendMail(adminMailOptions);
+      await transporter.sendMail(mailOptions);
       console.log("✅ Email sent successfully");
+    res.status(201).json({ success: true, message: "Inquiry received!" });
+
     } catch (mailErr) {
       // Log the error in terminal, but DON'T stop the process
       console.error("❌ Email failed, but data was saved to DB:", mailErr.message);
-    }
-
-    // STEP 3: Respond SUCCESS to React (because DB save worked)
-    res.status(201).json({ success: true, message: "Inquiry received!" });
-
-  } catch (err) {
-    console.error("❌ Critical Database Error:", err);
     res.status(500).json({ message: "Server error processing inquiry." });
-  }
+
+    }
 });
 // GET route for Admin to view inquiries
-app.get("/api/admin/inquiries", async (req, res) => {
+app.get("/api/admin/inquiries",protect, adminOnly, async (req, res) => {
   try {
     const inquiries = await Inquiry.find().sort({ createdAt: -1 });
     res.json(inquiries);
@@ -561,7 +661,7 @@ app.get("/api/admin/inquiries", async (req, res) => {
   }
 });
 
-app.delete("/api/admin/inquiry/:id", async (req, res) => {
+app.delete("/api/admin/inquiry/:id",protect, adminOnly, async (req, res) => {
   try {
     await Inquiry.findByIdAndDelete(req.params.id);
     res.json({ message: "Inquiry deleted" });

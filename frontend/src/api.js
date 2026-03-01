@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const API = axios.create({
   baseURL: process.env.REACT_APP_BASE_URL || "http://localhost:5000/api"
@@ -11,17 +12,21 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor for Error Handling (Maintenance Redirection)
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     const isNetworkError = !error.response;
-    const isCriticalPath = error.config?.url?.includes("/tours");
-    if (isNetworkError || (error.response?.status >= 500 && isCriticalPath)) {
-      if (window.location.pathname !== "/maintenance") {
-        window.location.href = "/maintenance";
-      }
+    
+    if (isNetworkError) {
+      toast.error("Network error. Please check your internet connection.");
+    } else if (error.response?.status >= 500) {
+      toast.error("Server is currently under maintenance. Please try again later.");
+    } else if (error.response?.status === 401) {
+      toast.warn("Session expired. Please login again.");
+      localStorage.removeItem("token");
+      // Optional: window.location.href = "/login";
     }
+
     return Promise.reject(error);
   }
 );
