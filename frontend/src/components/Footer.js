@@ -124,7 +124,7 @@ export default function Footer() {
             © {currentYear} Khodiyar Global Holidays. All rights reserved.
           </Typography>
           <Typography variant="body2" sx={{ opacity: 0.5, mt: { xs: 1, sm: 0 } }}>
-            Designed by <Link href="#" color="inherit" underline="always">Jaynit Nagar</Link>
+            Designed by <Link href="https://minetree-technologies.onrender.com" color="inherit" underline="always">Minetree Technologies</Link>
           </Typography>
         </Box>
       </Container>
