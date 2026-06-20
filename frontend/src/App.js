@@ -10,7 +10,6 @@ import MyBookings from "./pages/MyBookings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
-import Maintenance from "./pages/Maintenance";
 import AdminDashboard from "./pages/AdminDashboard";
 import ManageTours from "./pages/ManageTours";
 import ManageBookings from "./pages/ManageBookings";
@@ -22,7 +21,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/maintenance" element={<Maintenance />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 

@@ -3,13 +3,11 @@ import { Box, Typography, Container, Button, CircularProgress, Grid } from "@mui
 import API from "../api";
 import TourCard from "../components/TourCard";
 import Footer from "../components/Footer";
-import Maintenance from "../pages/Maintenance";
 import InquiryCard from "../components/InquiryCard";
 
 export default function Home() {
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [serverDown, setServerDown] = useState(false);
   const IMAGE_BASE = process.env.REACT_APP_Image_BASE_URL || "http://localhost:5000";
 
   useEffect(() => {
@@ -18,7 +16,6 @@ export default function Home() {
       .then((res) => {
         setTours(res.data);
         setLoading(false);
-        setServerDown(false);
       })
       .catch((err) => {
         console.error("Critical Data Load Failed:", err);
@@ -33,8 +30,6 @@ export default function Home() {
     { title: "Top Trending Trips", key: "trending" },
     { title: "Exclusive Offers", key: "exclusive" },
   ];
-
-  if (serverDown) return <Maintenance />;
 
   return (
     <Box sx={{ bgcolor: "#f9f9f9", minHeight: "100vh" }}>
